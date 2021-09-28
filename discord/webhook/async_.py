@@ -1339,6 +1339,7 @@ class Webhook(BaseWebhook):
         delete_after: Optional[:class:`float`]
             If provided, the number of seconds to wait before deleting the message.
             The waiting is done in the background and deletion failures are ignored.
+            .. versionadded:: 2.0
 
         Raises
         --------
@@ -1595,6 +1596,8 @@ class Webhook(BaseWebhook):
         delay: Optional[:class:`float`]
             If provided, the number of seconds to wait before deleting the message.
             The waiting is done in the background and deletion failures are ignored.
+            
+            .. versionadded:: 2.0
 
         Raises
         -------

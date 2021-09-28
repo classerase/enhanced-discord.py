@@ -350,6 +350,8 @@ class Interaction:
         delay: Optional[:class:`float`]
             If provided, the number of seconds to wait before deleting the message.
             The waiting is done in the background and deletion failures are ignored.
+            
+            .. versionadded:: 2.0
 
         Raises
         -------
@@ -494,6 +496,7 @@ class InteractionResponse:
             is set to 15 minutes.
         delete_after: Optional[:class:`float`]
             The amount of seconds the bot should wait before deleting the message sent.
+            .. versionadded:: 2.0
 
         Raises
         -------
