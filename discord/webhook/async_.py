@@ -742,13 +742,13 @@ class WebhookMessage(Message):
 
             async def inner_call(delay: float = delay):
                 try:
-                    await self._state._webhook.delete_message(self.id, delay=delay)
+                    await self._state._webhook.delete_message(self.id, delay)
                 except HTTPException:
                     pass
 
             asyncio.create_task(inner_call())
         else:
-            await self._state._webhook.delete_message(self.id, delay=delay)
+            await self._state._webhook.delete_message(self.id, delay)
 
 
 class BaseWebhook(Hashable):
