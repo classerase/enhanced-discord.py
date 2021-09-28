@@ -741,15 +741,14 @@ class WebhookMessage(Message):
         if delay is not None:
 
             async def inner_call(delay: float = delay):
-                await asyncio.sleep(delay)
                 try:
-                    await self._state._webhook.delete_message(self.id)
+                    await self._state._webhook.delete_message(self.id, delay=delay)
                 except HTTPException:
                     pass
 
             asyncio.create_task(inner_call())
         else:
-            await self._state._webhook.delete_message(self.id)
+            await self._state._webhook.delete_message(self.id, delay=delay)
 
 
 class BaseWebhook(Hashable):
@@ -1270,6 +1269,7 @@ class Webhook(BaseWebhook):
         view: View = MISSING,
         thread: Snowflake = MISSING,
         wait: bool = False,
+        delete_after: Optional[float] = None,
     ) -> Optional[WebhookMessage]:
         """|coro|
 
@@ -1335,6 +1335,10 @@ class Webhook(BaseWebhook):
             The thread to send this webhook to.
 
             .. versionadded:: 2.0
+        
+        delete_after: Optional[:class:`float`]
+            If provided, the number of seconds to wait before deleting the message.
+            The waiting is done in the background and deletion failures are ignored.
 
         Raises
         --------
@@ -1416,6 +1420,9 @@ class Webhook(BaseWebhook):
         if view is not MISSING and not view.is_finished():
             message_id = None if msg is None else msg.id
             self._state.store_view(view, message_id)
+        
+        if delete_after is not None and msg is not None:
+            await msg.delete(delay=delete_after)
 
         return msg
 
@@ -1570,7 +1577,7 @@ class Webhook(BaseWebhook):
             self._state.store_view(view, message_id)
         return message
 
-    async def delete_message(self, message_id: int, /) -> None:
+    async def delete_message(self, message_id: int, delay: Optional[float] = None, /) -> None:
         """|coro|
 
         Deletes a message owned by this webhook.
@@ -1584,6 +1591,10 @@ class Webhook(BaseWebhook):
         ------------
         message_id: :class:`int`
             The message ID to delete.
+        
+        delay: Optional[:class:`float`]
+            If provided, the number of seconds to wait before deleting the message.
+            The waiting is done in the background and deletion failures are ignored.
 
         Raises
         -------
@@ -1594,6 +1605,9 @@ class Webhook(BaseWebhook):
         """
         if self.token is None:
             raise InvalidArgument("This webhook does not have a token associated with it")
+
+        if delay is not None:
+            await asyncio.sleep(delay)
 
         adapter = async_context.get()
         await adapter.delete_webhook_message(

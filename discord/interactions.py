@@ -337,13 +337,19 @@ class Interaction:
             self._state.store_view(view, message.id)
         return message
 
-    async def delete_original_message(self) -> None:
+    async def delete_original_message(self, delay: Optional[float] = None) -> None:
         """|coro|
 
         Deletes the original interaction response message.
 
         This is a lower level interface to :meth:`InteractionMessage.delete` in case
         you do not want to fetch the message and save an HTTP request.
+
+        Parameters
+        ------------
+        delay: Optional[:class:`float`]
+            If provided, the number of seconds to wait before deleting the message.
+            The waiting is done in the background and deletion failures are ignored.
 
         Raises
         -------
@@ -352,6 +358,8 @@ class Interaction:
         Forbidden
             Deleted a message that is not yours.
         """
+        if delay is not None:
+            await asyncio.sleep(delay)
         adapter = async_context.get()
         await adapter.delete_original_interaction_response(
             self.application_id,
@@ -460,6 +468,7 @@ class InteractionResponse:
         view: View = MISSING,
         tts: bool = False,
         ephemeral: bool = False,
+        delete_after: Optional[float] = None,
     ) -> None:
         """|coro|
 
@@ -483,6 +492,8 @@ class InteractionResponse:
             Indicates if the message should only be visible to the user who started the interaction.
             If a view is sent with an ephemeral message and it has no timeout set then the timeout
             is set to 15 minutes.
+        delete_after: Optional[:class:`float`]
+            The amount of seconds the bot should wait before deleting the message sent.
 
         Raises
         -------
@@ -539,6 +550,8 @@ class InteractionResponse:
             self._parent._state.store_view(view)
 
         self.responded_at = utils.utcnow()
+        if delete_after is not None:
+            self._parent.delete_original_message(delay=delete_after)
 
     async def edit_message(
         self,
@@ -757,12 +770,11 @@ class InteractionMessage(Message):
         if delay is not None:
 
             async def inner_call(delay: float = delay):
-                await asyncio.sleep(delay)
                 try:
-                    await self._state._interaction.delete_original_message()
+                    await self._state._interaction.delete_original_message(delay=delay)
                 except HTTPException:
                     pass
 
             asyncio.create_task(inner_call())
         else:
-            await self._state._interaction.delete_original_message()
+            await self._state._interaction.delete_original_message(delay=delay)
